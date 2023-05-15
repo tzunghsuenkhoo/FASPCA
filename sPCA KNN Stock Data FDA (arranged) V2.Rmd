@@ -1,0 +1,566 @@
+---
+title: "sPCA of Stock Indices"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+*Set Working Directory (Shortcut Ctrl+Shift+H)*
+```{r}
+setwd("C:/Users/Khoo Tzung Hsuen/Desktop/Research")
+```
+
+*Import libraries*
+```{r, message=FALSE, warning=FALSE}
+library(fda)
+library(spdep)
+library(ade4)
+library(adegenet)
+library(adespatial)
+library(rgdal)
+library(maps)
+library(ggplot2)
+library(factoextra)
+library(magrittr)
+library(stats)
+library(broom)
+library(sf)
+library(dendextend)
+```
+
+*Import Data*
+```{r}
+stocks_2014_2015 <- read.csv("Stock_Indices_2014-2015.csv", header=T,check.names = F)
+stocks_2015_2016 <- read.csv("Stock_Indices_2015-2016.csv", header=T,check.names = F)
+stocks_2016_2017 <- read.csv("Stock_Indices_2016-2017.csv", header=T,check.names = F)
+stocks_2014_2015 <- stocks_2014_2015[-c(1)]
+stocks_2015_2016 <- stocks_2015_2016[-c(1)]
+stocks_2016_2017 <- stocks_2016_2017[-c(1)]
+stock_rates_2014_2015 <-apply(stocks_2014_2015,2,function(x) diff(log(x), lag=1))
+stock_rates_2015_2016 <-apply(stocks_2015_2016,2,function(x) diff(log(x), lag=1))
+stock_rates_2016_2017 <-apply(stocks_2016_2017,2,function(x) diff(log(x), lag=1))
+```
+
+*Set Locations using World Shape File*
+```{r fig.align="center", echo = FALSE,fig.width = 15}
+#shape file of countries 
+World <-readOGR(dsn="C:/Users/Khoo Tzung Hsuen/Desktop/Research/World_Cities","World_Cities")
+World_Background <- readOGR( 
+  dsn= "C:/Users/Khoo Tzung Hsuen/Desktop/Research/worldborders", 
+  layer="TM_WORLD_BORDERS-0.3",
+  verbose=FALSE
+)
+
+a1<-  which(World@data[, "CITY_NAME"] == "Brasilia") 
+a2<-  which(World@data[, "CITY_NAME"] == "Mexico City") 
+a3<-  which(World@data[, "CITY_NAME"] == "Buenos Aires")
+a4<-  which(World@data[, "CITY_NAME"] == "Amsterdam")
+a5<-  which(World@data[, "CITY_NAME"] == "Athens")
+a6<-  which(World@data[, "CITY_NAME"] == "Brussels")
+a7<-  which(World@data[, "CITY_NAME"] == "Bucharest")
+a8<-  which(World@data[, "CITY_NAME"] == "Budapest")
+a9<-  which(World@data[, "CITY_NAME"] == "Paris")
+a10<- which(World@data[, "CITY_NAME"] == "Berlin")
+a11<- which(World@data[, "CITY_NAME"] == "Rome")
+a12<- which(World@data[, "CITY_NAME"] == "Helsinki")
+a13<- which(World@data[, "CITY_NAME"] == "Madrid")
+a14<- which(World@data[, "CITY_NAME"] == "Reykjavik")
+a15<- which(World@data[, "CITY_NAME"] == "Riga")
+a16<- which(World@data[, "CITY_NAME"] == "Stockholm")
+a17<- which(World@data[, "CITY_NAME"] == "Tallinn")   
+a18<- which(World@data[, "CITY_NAME"] == "Vilnius")
+a19<- which(World@data[, "CITY_NAME"] == "Oslo")
+a20<- which(World@data[, "CITY_NAME"] == "Lisbon")
+a21<- which(World@data[, "CITY_NAME"] == "Prague")
+a22<- which(World@data[, "CITY_NAME"] == "Bratislava")
+a23<- which(World@data[, "CITY_NAME"] == "Bern")
+a24<- which(World@data[, "CITY_NAME"] == "Sofia")
+a25<- which(World@data[, "CITY_NAME"] == "London")
+a26<- which(World@data[, "CITY_NAME"] == "Kyiv")
+a27<- which(World@data[, "CITY_NAME"] == "Ankara")
+a28<- which(World@data[, "CITY_NAME"] == "Canberra")
+a29<- which(World@data[, "CITY_NAME"] == "Hong Kong")
+a30<- which(World@data[, "CITY_NAME"] == "Jakarta")
+a31<- which(World@data[, "CITY_NAME"] == "Kuala Lumpur")
+a32<- which(World@data[, "CITY_NAME"] == "Seoul")
+a33<- which(World@data[, "CITY_NAME"] == "Tokyo")
+a34<- which(World@data[, "CITY_NAME"] == "Wellington")
+a35<- which(World@data[, "CITY_NAME"] == "Manila")
+a36<- which(World@data[, "CITY_NAME"] == "Bangkok")
+a37<- which(World@data[, "CITY_NAME"] == "Beijing")
+a38<- which(World@data[, "CITY_NAME"] == "New Delhi")
+a39<- which(World@data[, "CITY_NAME"] == "Singapore")
+a40<- which(World@data[, "CITY_NAME"] == "Taipei")
+a41<- which(World@data[, "CITY_NAME"] == "Vienna")
+a42<- which(World@data[, "CITY_NAME"] == "Moscow")
+a43<- which(World@data[, "CITY_NAME"] == "Guangzhou")
+a44<- which(World@data[, "CITY_NAME"] == "Hanoi")
+a45<- which(World@data[, "CITY_NAME"] == "Islamabad")
+a46<- which(World@data[, "CITY_NAME"] == "Colombo")
+a47<- which(World@data[, "CITY_NAME"] == "Bogota")
+a48<- which(World@data[, "CITY_NAME"] == "Lima")
+a50<- which(World@data[, "CITY_NAME"] == "Santiago")[1]
+a51<- which(World@data[, "CITY_NAME"] == "Sarajevo")
+a52<- which(World@data[, "CITY_NAME"] == "Dublin")
+a53<- which(World@data[, "CITY_NAME"] == "Warsaw")
+a54<- which(World@data[, "CITY_NAME"] == "Copenhagen")
+a55<- which(World@data[, "CITY_NAME"] == "Zagreb")
+a56<- which(World@data[, "CITY_NAME"] == "Belgrade")
+a57<- which(World@data[, "CITY_NAME"] == "Cape Town")
+a58<- which(World@data[, "CITY_NAME"] == "Windhoek")
+a59<- which(World@data[, "CITY_NAME"] == "Rabat")
+a60<- which(World@data[, "CITY_NAME"] == "Tunis")
+a61<- which(World@data[, "CITY_NAME"] == "Lusaka")
+a62<- which(World@data[, "CITY_NAME"] == "Ottawa")
+a63<- which(World@data[, "CITY_NAME"] == "New York")
+a64<- which(World@data[, "CITY_NAME"] == "Chicago") 
+a65<- which(World@data[, "CITY_NAME"] == "Amman")
+a66<- which(World@data[, "CITY_NAME"] == "Riyadh")
+a67<- which(World@data[, "CITY_NAME"] == "Doha")
+a68<- which(World@data[, "CITY_NAME"] == "Abu Dhabi")
+a69<- which(World@data[, "CITY_NAME"] == "Jerusalem")
+a70<- which(World@data[, "CITY_NAME"] == "Manama")
+a71<- which(World@data[, "CITY_NAME"] == "Muscat")
+a72<- which(World@data[, "CITY_NAME"] == "Cairo")
+
+vec_a <- c(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,
+           a17,a18,a19,a20,a21,a22,a23,a24,a25,a26,a27,a28,a29,a30,
+           a31,a32,a33,a34,a35,a36,a37,a38,a39,a40,a41,a42,a43,a44,
+           a45,a46,a47,a48,a50,a51,a52,a53,a54,a55,a56,a57,a58,a59,
+           a60,a61,a62,a63,a64,a65,a66,a67,a68,a69,a70,a71,a72)
+
+countries <- World[vec_a,]
+countries_df <-data.frame(countries)
+countries_df
+countries$CITY_NAME
+coords_countries <- coordinates(countries)
+# spdf_fortified <- tidy(World_Background, region = "NAME")
+# ggplot() +
+#   geom_polygon(data = spdf_fortified, aes( x = long, y = lat, group = group), fill="yellow", color="grey") +
+#      theme_void() +
+#            geom_point(data = countries_df,aes( x = coords.x1, y = coords.x2),pch=16, col="red",cex=3) +
+#             ylim(-60,80)
+# 
+# spdf_fortified
+```
+
+*Create Spatial Weight Matrices*
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+knn5<-knearneigh(coords_countries, k=4)
+knn5<-knn2nb(knn5) # Convert to matrix where weights sums to 1
+knn_listw<-nb2listw(knn5) 
+knn_sf <- as(nb2lines(nb=knn5, coords=coords_countries), 'sf')
+knn_sf <- st_set_crs(knn_sf, st_crs(CRS("+proj=longlat +datum=WGS84")))
+knn_mat <- listw2mat(knn_listw)
+
+ggplot() +
+  geom_polygon(data = spdf_fortified, aes( x = long, y = lat, group = group), fill="yellow", color="grey") +
+  geom_sf(data = knn_sf)+
+  geom_point(data = countries_df,aes( x = coords.x1, y = coords.x2),pch=16, col="red",cex=3)+ ylim(-60,90)
+```
+
+*Functional Moran's I*
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+
+# Getting univariate Moran's I
+dim.2014 = 259
+moran.func2014.knn <- matrix(0,nrow = dim.2014,ncol = 1)
+for (i in 1:dim.2014) {
+  moran.func2014.knn[i,1]= moran.mc(stock_rates_2014_2015[i,],listw = knn_listw , 499)$statistic}
+
+dim.2015 = 259
+moran.func2015.knn <- matrix(0,nrow = dim.2015,ncol = 1)
+for (i in 1:dim.2015) {
+  moran.func2015.knn[i,1]= moran.mc(stock_rates_2015_2016[i,],listw = knn_listw , 499)$statistic}
+
+dim.2016 = 259
+moran.func2016.knn <- matrix(0,nrow = dim.2016,ncol = 1)
+for (i in 1:dim.2016) {
+  moran.func2016.knn[i,1]= moran.mc(stock_rates_2016_2017[i,],listw = knn_listw , 499)$statistic}
+
+moran.func.knn1 = cbind(moran.func2014.knn, moran.func2015.knn, moran.func2016.knn)
+
+#Transforming into functional forms
+lambda1 = 120
+t = seq(1,dim(moran.func.knn1)[1])
+norder = 4
+nbasis1 = length(t) + norder - 2 # Penalty Smoothing
+funcbasis = create.bspline.basis(c(1,dim(moran.func.knn1)[1]), nbasis1, norder, t)
+accelLfd = int2Lfd(2)
+fdParobj1 = fdPar(funcbasis,accelLfd,lambda1) # lambda assumed to be 1 without going through gcv
+funcfd.fit = smooth.basis(t, moran.func.knn1, fdParobj1)
+coefmat = NULL
+coefmat = cbind(coefmat,coef(funcfd.fit))
+Xfd_moran_knn = fd(coefmat,funcbasis)
+moran.func.knn = t(Xfd_moran_knn$coefs) 
+row.names(moran.func.knn) <- c("Period 1","Period 2", "Period 3")
+mean1 = mean(moran.func.knn1[,1])
+mean2 = mean(moran.func.knn1[,2])
+mean3 = mean(moran.func.knn1[,3])
+par(font.lab=2,lwd=3,font=2,cex=2)
+plot(Xfd_moran_knn,
+     lty=1,lwd=6,
+     col=1:3,
+     ylim=c(-0.05,0.25),
+     ylab="Moran's I statistic",xlab="Day")
+abline(h=c(mean1,mean2,mean3),col=1:3,lty=3,lwd=5)
+par(font.lab=2,lwd=3,font=2,cex=1.5, new=TRUE)
+legend("topleft",legend = c("Period 1","Period 2","Period 3"),
+       col = c(1,2,3) ,lwd = 5,
+       cex = 1,bty = "o",border = "black")
+
+```
+
+*Spatial Stationarity*
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+library(LS2Wstat)
+library(automap)
+library(gstat)
+library(sp)
+library(spacetime)
+library(raster)
+library(rgdal)
+library(rgeos) 
+library(xlsx)
+
+mean_spatial = c()
+for (i in 1:dim(stock_rates_2014_2015)[2])
+{
+ mean1 = mean(stock_rates_2014_2015[,i]) +  mean(stock_rates_2015_2016[,i]) + mean(stock_rates_2016_2017[,i]) 
+ mean_spatial = rbind(mean_spatial, mean1)
+}  
+
+var_spatial = c()
+for (i in 1:dim(stock_rates_2014_2015)[2])
+ {
+  k  = c(stock_rates_2014_2015[,i],stock_rates_2015_2016[,i],stock_rates_2016_2017[,i])
+  var1 = var(k)
+  var_spatial = rbind(var_spatial, var1)
+ }
+plot(seq(1,71), var_spatial)
+
+plot(seq(1,71), mean_spatial)
+coords_df = as.data.frame(cbind(coords_countries,var_spatial))
+colnames(coords_df)=c("x","y","z")
+rownames(coords_df) = seq(1,71)
+coordinates(coords_df) = ~x+y
+
+lmSpat <- lm(formula=z~x+y,data=coords_df)
+summary(lmSpat)
+plot(lmSpat$residuals,pch=16,col='red')
+plot(mean_spatial,pch=16,col='red')
+
+
+variogram = autofitVariogram(z~1,coords_df)
+plot(variogram)
+
+date2 <- as.POSIXlt("2014-06-01", format="%Y-%m-%d", origin="1970-01-01", tz="GMT")
+date <- seq.POSIXt(date2, by="day", length.out = 365*3)
+date <- date[!(weekdays(as.Date(date)) %in% c('Saturday','Sunday'))]
+dateTM <- date[-c(1,261,521,522,523)]
+dataDF <- rbind(stock_rates_2014_2015,stock_rates_2015_2016,stock_rates_2016_2017)
+rownames(dataDF) <- dateTM
+dataSP <- SpatialPoints(countries@coords,CRS("+init=epsg:4326"))
+timeDF <- STIDF(sp=dataSP,time=dateTM,data=dataDF)
+
+# data <- read.table("ozon_tram1_14102011_14012012.csv", sep=",", header=T)
+# head(data)
+
+colnames(coords_countries) = c('long','lat')
+df <- data.frame(matrix(ncol = 4 , nrow = 259*71))
+x <- c("time", "return", "latitude","longitude")
+colnames(df) <- x
+ind = seq(1,259*71)
+dum=0
+for (i in 1:259)
+{
+ for (j in 1:71)
+ {
+ dum=dum+1
+ df[ind[dum],1] = dateTM[i]
+ df[ind[dum],2] = stock_rates_2014_2015[i,j]
+ df[ind[dum],3] = as.numeric(coords_countries[j,][2])
+ df[ind[dum],4] = as.numeric(coords_countries[j,][1])
+ }
+}
+df$TIME <- as.POSIXlt(as.numeric(substr(paste(df$time), 1, 10)), origin="1970-01-01")
+colnames(df) = c("time", "RET", "LAT","LON","TIME")
+sub <- df[df$TIME>=as.POSIXct('2014-06-03 08:00 CET')&df$TIME<=as.POSIXct('2014-07-03 08:00 CET'),]
+coordinates(sub)=~LON+LAT
+projection(sub)=CRS("+init=epsg:4326")
+ 
+#Transform into Mercator Projection
+data.UTM <- spTransform(sub,CRS("+init=epsg:4326")) 
+dataSP <- SpatialPoints(data.UTM@coords,CRS("+init=epsg:4326")) 
+dataDF <- data.frame(RET=data.UTM$RET) 
+dataTM <- as.POSIXct(data.UTM$TIME,tz="CET") 
+timeDF <- STIDF(dataSP,dataTM,data=dataDF) 
+
+var <- variogramST(RET~1,data=timeDF,tunit="days",assumeRegular=F,na.omit=T) 
+plot(var,map=F) 
+```
+
+*Trace-Variogram*
+```{r}
+library(geofd)
+M <- bsplinepen(funcbasis,Lfdobj=0)
+L2norm_1 = l2.norm(71,Xfd1,M)
+dista=max(dist(coords_countries))*0.5
+tracev_1=trace.variog(coords_countries, L2norm_1, bin=FALSE, max.dist=dista,uvec="default",breaks="default",nugget.tolerance)
+models_1=fit.tracevariog(tracev_1, models=c("spherical","exponential","gaussian","matern"),sigma2.0=2000, phi.0=4, fix.nugget=FALSE,nugget=0, fix.kappa=TRUE, kappa=1, max.dist.variogram=dista)
+plot.geofd(emp.trace.vari=tracev_1 ,trace.vari.array=models_1$fitted,xlab="Distance", ylab="Trace-Variogram")
+# lines(models$fitted[[1]], lwd=2)
+# lines(models$fitted[[2]], lwd=2, col=4)
+# lines(models$fitted[[3]], lwd=2, col=7)
+# lines(models$fitted[[4]], lwd=2, col=6)
+# legend("topleft", c("empirical trace variogram", "spherical",
+# + "exponential", "gaussian", "matern"), lty=c(-1,1,1,1,1),
+# + col=c(1,1,4,7,6), pch=c(1,-1,-1,-1,-1))
+tracevbin_1=trace.variog(coords_countries, L2norm_1, bin=TRUE,max.dist=dista)
+plot(tracevbin_1$u, tracevbin_1$v, ylim=c(0,3000), xlim=c(0, 7),xlab="Distance", ylab="Trace-Variogram")
+
+L2norm_2 = l2.norm(71,Xfd2,M)
+dista=max(dist(coords_countries))*0.9
+tracev_2=trace.variog(coords_countries, L2norm_2, bin=FALSE, max.dist=dista,uvec="default",breaks="default",nugget.tolerance)
+models_2=fit.tracevariog(tracev_2, models=c("spherical","exponential","gaussian","matern"),sigma2.0=2000, phi.0=4, fix.nugget=FALSE,nugget=0, fix.kappa=TRUE, kappa=1, max.dist.variogram=dista)
+plot.geofd(emp.trace.vari=tracev_2 ,trace.vari.array=models_2$fitted,xlab="Distance", ylab="Trace-Variogram")
+# lines(models$fitted[[1]], lwd=2)
+# lines(models$fitted[[2]], lwd=2, col=4)
+# lines(models$fitted[[3]], lwd=2, col=7)
+# lines(models$fitted[[4]], lwd=2, col=6)
+# legend("topleft", c("empirical trace variogram", "spherical",
+# + "exponential", "gaussian", "matern"), lty=c(-1,1,1,1,1),
+# + col=c(1,1,4,7,6), pch=c(1,-1,-1,-1,-1))
+tracevbin_2=trace.variog(coords_countries, L2norm_2, bin=TRUE,max.dist=dista)
+plot(tracevbin_2$u, tracevbin_2$v, ylim=c(0,3000), xlim=c(0, 7),xlab="Distance", ylab="Trace-Variogram")
+
+L2norm_3 = l2.norm(71,Xfd1,M)
+dista=max(dist(coords_countries))*0.9
+tracev_3=trace.variog(coords_countries, L2norm_3, bin=FALSE, max.dist=dista,uvec="default",breaks="default",nugget.tolerance)
+models_3=fit.tracevariog(tracev_3, models=c("spherical","exponential","gaussian","matern"),sigma2.0=2000, phi.0=4, fix.nugget=FALSE,nugget=0, fix.kappa=TRUE, kappa=1, max.dist.variogram=dista)
+plot.geofd(emp.trace.vari=tracev_3 ,trace.vari.array=models_3$fitted,xlab="Distance", ylab="Trace-Variogram")
+# lines(models$fitted[[1]], lwd=2)
+# lines(models$fitted[[2]], lwd=2, col=4)
+# lines(models$fitted[[3]], lwd=2, col=7)
+# lines(models$fitted[[4]], lwd=2, col=6)
+# legend("topleft", c("empirical trace variogram", "spherical",
+# + "exponential", "gaussian", "matern"), lty=c(-1,1,1,1,1),
+# + col=c(1,1,4,7,6), pch=c(1,-1,-1,-1,-1))
+tracevbin_3=trace.variog(coords_countries, L2norm_3, bin=TRUE,max.dist=dista)
+plot(tracevbin_3$u, tracevbin_3$v, ylim=c(0,3000), xlim=c(0, 7),xlab="Distance", ylab="Trace-Variogram")
+
+#Test (LS2WStat)
+library(LS2Wstat)
+library(HiClimR)
+library(raster)
+# coords_countries
+# data <- grid2D(lon=coords_countries[,1],lat=coords_countries[,2])
+# pts <- cbind(lat=as.vector(coords_countries[,2]), lon=as.vector(coords_countries[,1]), aq=as.vector(stock_rates_2014_2015[1,]))
+# points <- SpatialPoints(stock_)
+# pixels <- SpatialPixelsDataFrame(points, points@data)
+# r <- rasterFromXYZ(pts)
+# plot(r)
+datamatrix = matrix(0,nrow=71,ncol=71)
+rownames(datamatrix) = coords_countries[,1]
+colnames(datamatrix) = coords_countries[,2]
+coords_df = cbind(coords_countries,ret=stock_rates_2014_2015[1,])
+for (i in 1:71)
+{
+ datamatrix[as.numeric(coords_df[,1][i]), as.numeric(coords_df[,2][i])] = as.numeric(stock_rates_2014_2015[1,][i])
+}
+
+r = rasterFromXYZ(coords_df [,c(1,2,3)])
+```
+
+*Panel Data Spatial Autocorrelation*
+```{r}
+
+knn.mat <- listw2mat(knn_listw)
+
+dim.2014=dim(stock_rates_2014_2015)[1]
+knn.mat_panel<-kronecker(diag(1,dim.2014),knn.mat)
+list.knn.mat_panel.2014<-mat2listw(knn.mat_panel,style = "W")
+
+dim.2015=dim(stock_rates_2015_2016)[1]
+knn.mat_panel<-kronecker(diag(1,dim.2015),knn.mat)
+list.knn.mat_panel.2015<-mat2listw(knn.mat_panel,style = "W")
+
+dim.2016=dim(stock_rates_2016_2017)[1]
+knn.mat_panel<-kronecker(diag(1,dim.2016),knn.mat)
+list.knn.mat_panel.2016<-mat2listw(knn.mat_panel,style = "W")
+set.seed(1234)
+moran.mc(t(stock_rates_2014_2015),listw = list.knn.mat_panel.2014,999)
+moran.mc(t(stock_rates_2015_2016),listw = list.knn.mat_panel.2015,999)
+moran.mc(t(stock_rates_2016_2017),listw = list.knn.mat_panel.2016,999)
+
+```
+
+*Transforming the Log Return Stock Data into Functional Data*
+```{r}
+lambda1 = 1.2*1e2
+t = seq(1,dim(stock_rates_2014_2015)[1])
+norder = 4
+nbasis1 = length(t) + norder - 2 # Penalty Smoothing
+funcbasis = create.bspline.basis(c(1,dim(stock_rates_2014_2015)[1]), nbasis1, norder, t)
+accelLfd = int2Lfd(2)
+fdParobj1 = fdPar(funcbasis,accelLfd,lambda1) # lambda assumed to be 1 without going through gcv
+funcfd.fit = smooth.basis(t, stock_rates_2014_2015, fdParobj1)
+Xfd1 = funcfd.fit$fd
+coefmat = NULL
+coefmat = cbind(coefmat,coef(funcfd.fit))
+Xfd1 = fd(coefmat,funcbasis)
+data_multi_2014_2015=t(Xfd1$coefs) 
+row.names(data_multi_2014_2015) <- countries$NAME
+# logreturns1 <- as.data.frame(stock_rates_2014_2015)
+# #Example Curves
+# plot(Xfd1["NASDAQ (USA)"], xlab="Days", ylab="Daily Log Return",main="NASDAQ (USA)")
+# points(logreturns1["NASDAQ (USA)"])
+# plot(Xfd1["NYSE Composite (USA)"], xlab="Days", ylab="Daily Log Return",main="NYSE (USA)")
+# points(logreturns1["NYSE Composite (USA)"])
+# plot(Xfd1["OMXC20 (DENMARK)"], xlab="Days", ylab="Daily Log Return",main="OMXC20 (DENMARK)")
+# points(logreturns1["OMXC20 (DENMARK)"])
+
+t = seq(1,dim(stock_rates_2015_2016)[1])
+norder = 4
+nbasis1 = length(t) + norder - 2 # Penalty Smoothing
+funcbasis = create.bspline.basis(c(1,dim(stock_rates_2015_2016)[1]), nbasis1, norder, t)
+accelLfd = int2Lfd(2)
+fdParobj1 = fdPar(funcbasis,accelLfd,lambda1) # lambda assumed to be 1 without going through gcv
+funcfd.fit = smooth.basis(t, stock_rates_2015_2016, fdParobj1)
+Xfd2 = funcfd.fit$fd
+coefmat = NULL
+coefmat = cbind(coefmat,coef(funcfd.fit))
+Xfd2 = fd(coefmat,funcbasis)
+data_multi_2015_2016=t(Xfd2$coefs) 
+row.names(data_multi_2015_2016)<- countries$NAME
+
+t = seq(1,dim(stock_rates_2016_2017)[1])
+norder = 4
+nbasis1 = length(t) + norder - 2 # Penalty Smoothing
+funcbasis = create.bspline.basis(c(1,dim(stock_rates_2016_2017)[1]),  nbasis1, norder, t)
+accelLfd = int2Lfd(2)
+fdParobj1 = fdPar(funcbasis,accelLfd,lambda1) # lambda assumed to be 1 without going through gcv
+funcfd.fit = smooth.basis(t, stock_rates_2016_2017, fdParobj1)
+Xfd3= funcfd.fit$fd
+coefmat = NULL
+coefmat = cbind(coefmat,coef(funcfd.fit))
+Xfd3 = fd(coefmat,funcbasis)
+data_multi_2016_2017=t(Xfd3$coefs) 
+row.names(data_multi_2016_2017)<- countries$NAME
+```
+
+
+*Functional sPCA (2014-2015)(KNN)*
+```{r fig.align="center", echo = FALSE,fig.width = 15}
+spca22v <- spca(data_multi_2014_2015,xy=coords_countries, cn=knn_listw,ask=FALSE,scannf=TRUE,nfposi =2,nfnega =2) 
+
+par(mar=c(5,6,4,1)+.1)
+ylab = expression(paste("Numerical value of eigenvalues ( " ~ 10^-5, ")"))
+barplot(spca22v$eig*10^5, main="Eigenvalues of sPCA", col = heat.colors(length(spca22v$eig)),
+          ylab=ylab,cex.axis=1.3,cex.lab=1.3) 
+
+set.seed(1234)
+moran.mc(spca22v$li[,1],knn_listw, 999)
+moran.mc(spca22v$li[,2],knn_listw, 999)
+moran.mc(spca22v$li[,3],knn_listw,alternative = "less", 999) #1st negative
+moran.mc(spca22v$li[,4],knn_listw,alternative = "less", 999) #2nd negative
+
+#the % variability
+round(abs(spca22v$eig[1])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[2])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[70])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[69])*100 /sum(abs(spca22v$eig)) ,2)
+
+#the first positive
+par(mar=c(0.5,0.5,2.5,0.5))
+plot(World_Background,col="#FFFFA8FF", border="black", lwd=0.2, ylim=c(-20,80))
+s.value(coords_countries, spca22v$ls[,1], add.p=TRUE, csize=0.5,clegend = 1.2)
+plot(World_Background, xlim=c(8,9), ylim=c(30,67),col="#FFFFA8FF", border="black", lwd=0.2)
+s.value(coords_countries, spca22v$ls[,1], add.p=TRUE, csize=0.5,clegend = 1.2)
+
+#the second positive
+par(mar=c(0.5,0.5,2.5,0.5))
+plot(World_Background,col="#FFFFA8FF", border="black", lwd=0.2, ylim=c(-20,80))
+s.value(coords_countries, spca22v$ls[,2], add.p=TRUE, csize=0.5,clegend = 1.2)
+plot(World_Background, xlim=c(8,9), ylim=c(30,67),col="#FFFFA8FF", border="black", lwd=0.2)
+s.value(coords_countries, spca22v$ls[,2], add.p=TRUE, csize=0.5,clegend = 1.2)
+```
+
+*Functional sPCA (2015-2016)(KNN)*
+```{r fig.align="center", echo = FALSE,fig.width = 15}
+spca22v <- spca(data_multi_2015_2016,xy=coords_countries, cn=knn_listw,ask=FALSE,scannf=TRUE,nfposi =2,nfnega =2)
+
+par(mar=c(5,6,4,1)+.1)
+ylab = expression(paste("Numerical value of eigenvalues ( " ~ 10^-5, ")"))
+barplot(spca22v$eig*10^5, main="Eigenvalues of sPCA", col = heat.colors(length(spca22v$eig)),
+          ylab=ylab,cex.axis=1.3,cex.lab=1.3) 
+
+
+set.seed(1234)
+moran.mc(spca22v$li[,1],knn_listw, 999)
+moran.mc(spca22v$li[,2],knn_listw, 999)
+moran.mc(spca22v$li[,3],knn_listw,alternative = "less", 999) #1st negative
+moran.mc(spca22v$li[,4],knn_listw,alternative = "less", 999) #2nd negative
+
+#the % variability
+round(abs(spca22v$eig[1])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[2])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[70])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[69])*100 /sum(abs(spca22v$eig)) ,2)
+
+#the first positive
+par(mar=c(0.5,0.5,2.5,0.5))
+plot(World_Background,col="#FFFFA8FF", border="black", lwd=0.2, ylim=c(-20,80))
+s.value(coords_countries, spca22v$ls[,1], add.p=TRUE, csize=0.5,clegend = 1.2)
+plot(World_Background, xlim=c(8,9), ylim=c(30,67),col="#FFFFA8FF", border="black", lwd=0.2)
+s.value(coords_countries, spca22v$ls[,1], add.p=TRUE, csize=0.5,clegend = 1.2)
+
+#the second positive
+par(mar=c(0.5,0.5,2.5,0.5))
+plot(World_Background,col="#FFFFA8FF", border="black", lwd=0.2, ylim=c(-20,80))
+s.value(coords_countries, spca22v$ls[,2], add.p=TRUE, csize=0.5,clegend = 1.2)
+plot(World_Background, xlim=c(8,9), ylim=c(30,67),col="#FFFFA8FF", border="black", lwd=0.2)
+s.value(coords_countries, spca22v$ls[,2], add.p=TRUE, csize=0.5,clegend = 1.2)
+
+```
+
+*Functional sPCA (2016-2017)(KNN)*
+```{r fig.align="center", echo = FALSE,fig.width = 15}
+spca22v <- spca(data_multi_2016_2017,xy=coords_countries, cn=knn_listw,ask=FALSE,scannf=TRUE,nfposi =2,nfnega =2)
+
+par(mar=c(5,6,4,1)+.1)
+ylab = expression(paste("Numerical value of eigenvalues ( " ~ 10^-5, ")"))
+barplot(spca22v$eig*10^5, main="Eigenvalues of sPCA", col = heat.colors(length(spca22v$eig)),
+          ylab=ylab,cex.axis=1.3,cex.lab=1.3) 
+
+
+set.seed(1234)
+moran.mc(spca22v$li[,1],knn_listw, 999)
+moran.mc(spca22v$li[,2],knn_listw, 999)
+moran.mc(spca22v$li[,3],knn_listw,alternative = "less", 999) #1st negative
+moran.mc(spca22v$li[,4],knn_listw,alternative = "less", 999) #2nd negative
+
+#the % variability
+round(abs(spca22v$eig[1])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[2])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[70])*100 /sum(abs(spca22v$eig)) ,2)
+round(abs(spca22v$eig[69])*100 /sum(abs(spca22v$eig)) ,2)
+
+#the first positive
+par(mar=c(0.5,0.5,2.5,0.5))
+plot(World_Background,col="#FFFFA8FF", border="black", lwd=0.2, ylim=c(-20,80))
+s.value(coords_countries, spca22v$ls[,1], add.p=TRUE, csize=0.5,clegend = 1.2)
+plot(World_Background, xlim=c(8,9), ylim=c(30,67),col="#FFFFA8FF", border="black", lwd=0.2)
+s.value(coords_countries, spca22v$ls[,1], add.p=TRUE, csize=0.5,clegend = 1.2)
+
+#the second positive
+par(mar=c(0.5,0.5,2.5,0.5))
+plot(World_Background,col="#FFFFA8FF", border="black", lwd=0.2, ylim=c(-20,80))
+s.value(coords_countries, spca22v$ls[,2], add.p=TRUE, csize=0.5,clegend = 1.2)
+plot(World_Background, xlim=c(8,9), ylim=c(30,67),col="#FFFFA8FF", border="black", lwd=0.2)
+s.value(coords_countries, spca22v$ls[,2], add.p=TRUE, csize=0.5,clegend = 1.2)
+```
