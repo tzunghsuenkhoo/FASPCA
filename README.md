@@ -2,7 +2,7 @@
 FASPCA is a extension of sPCA developed by Jombart et al. (2008) in the framework of functional data analysis (FDA). <br />
 FASPCA was developed by Alaa Ali Hassan (2021). <br />
 Codes uploaded here is an implementation of FASPCA on 71 stock exchanges globally (Khoo et al., (2023)). <br />
-The uploaded csv file comprises of daily closing prices from the 71 stock exchanges. The period is from June 2 2014 to May 30 2017. <br />
+The uploaded csv files are comprised of daily closing prices of 71 stock exchanges from the period of June 2 2014 to May 30 2017. <br />
 
 Hassan, A. A. (2021). Spatial data analysis : applications to population health. 
 Chapter 2. Exploring spatial patterns of mortality in Europe using functional spatial principal components for areal data. 15–30.
